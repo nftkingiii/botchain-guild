@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+**/node_modules/
+**/dist/
+**/out/
+**/cache/
+**/broadcast/
+**/PROJECT_STATE.md
+.DS_Store

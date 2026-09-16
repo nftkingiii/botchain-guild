@@ -1,4 +1,4 @@
-import { createPublicClient, custom, defineChain, http, parseAbi } from "viem";
+import { createPublicClient, createWalletClient, custom, defineChain, http, parseAbi } from "viem";
 
 const env = import.meta.env;
 export const escrowAddress = (env.VITE_GUILD_ESCROW_ADDRESS || "0x8fF7299cc7C86A091a7b1a7844a7793279AC7485") as `0x${string}`;
@@ -61,7 +61,7 @@ export async function readJobs(): Promise<GuildJob[]> {
   if (!tokenCode || tokenCode === "0x") throw new Error("No contract bytecode at the configured test-token address.");
   if (configuredToken.toLowerCase() !== tokenAddress.toLowerCase()) throw new Error("Configured MockUSDT address does not match the escrow's paymentToken().");
   const latest = await publicClient.getBlockNumber();
-  const funded = escrowAbi.find((item) => item.type === "event" && item.name === "JobFunded");
+  const funded = escrowAbi.find((item) => item.type === "event" && item.name === "JobFunded") as any;
   if (!funded) throw new Error("JobFunded ABI unavailable");
   const logs = [] as Awaited<ReturnType<typeof publicClient.getLogs>>[];
   for (let start = deploymentBlock; start <= latest; start += 4000n) {
@@ -70,7 +70,7 @@ export async function readJobs(): Promise<GuildJob[]> {
   }
   const entries = logs.flat().slice(-100).reverse();
   const jobs = await Promise.all(entries.map(async (log) => {
-    const id = log.args.jobId;
+    const id = (log.args as { jobId?: `0x${string}` } | undefined)?.jobId;
     if (!id || log.blockNumber === null || !log.transactionHash) return null;
     const job = await publicClient.readContract({ address: escrowAddress, abi: escrowAbi, functionName: "getJob", args: [id] });
     return { id, client: job.client, worker: job.worker, arbiter: job.arbiter, amount: job.amount, deadline: job.deadline, submittedAt: job.submittedAt, state: job.state, evidenceHash: job.evidenceHash, blockNumber: log.blockNumber, transactionHash: log.transactionHash } satisfies GuildJob;
@@ -83,7 +83,7 @@ export async function readTimeline(id: `0x${string}`, from = deploymentBlock): P
   const eventNames = ["JobFunded", "EvidenceSubmitted", "DisputeOpened", "JobReleased", "JobRefunded"] as const;
   const all: TimelineEvent[] = [];
   for (const name of eventNames) {
-    const event = escrowAbi.find((item) => item.type === "event" && item.name === name);
+    const event = escrowAbi.find((item) => item.type === "event" && item.name === name) as any;
     if (!event) continue;
     for (let start = from; start <= latest; start += 4000n) {
       const end = start + 3999n < latest ? start + 3999n : latest;

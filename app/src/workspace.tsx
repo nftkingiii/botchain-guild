@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Activity, ArrowLeft, ArrowUpRight, Check, CircleAlert, CircleHelp, Clock3, Compass, Copy, ExternalLink, FileCheck2, Filter, BriefcaseBusiness, Menu, Plus, RefreshCw, Search, ShieldCheck, Wallet, X } from "lucide-react";
 import { keccak256, toBytes, type Address, type Hash } from "viem";
-import { escrowAbi, escrowAddress, GuildJob, getMeta, JobMeta, publicClient, readJobs, readTimeline, sha256File, statusNames, TimelineEvent, tokenAbi, tokenAddress, walletClient, ensureTestnet } from "./chain";
+import { escrowAbi, escrowAddress, GuildJob, getMeta, JobMeta, publicClient, putMeta, readJobs, readTimeline, sha256File, statusNames, TimelineEvent, tokenAbi, tokenAddress, walletClient, ensureTestnet } from "./chain";
 import { eligibleActions, isParticipant, isRejected, withinBudget } from "./logic";
 
 type Tab = "discover" | "work" | "escrow";
@@ -144,7 +144,7 @@ export default function Guild() {
 
   async function approveToken() {
     const value = BigInt(amount || "0"); if (value <= 0n) { setNotice({ kind: "error", text: "Enter a positive whole number of MockUSDT base units." }); return; }
-    try { await sendWrite("MockUSDT approval", tokenAddress, tokenAbi, "approve", [escrowAddress, value]); const approved = await publicClient.readContract({ address: tokenAddress, abi: tokenAbi, functionName: "allowance", args: [account!] }); setAllowance(approved); }
+    try { await sendWrite("MockUSDT approval", tokenAddress, tokenAbi, "approve", [escrowAddress, value]); const approved = await publicClient.readContract({ address: tokenAddress, abi: tokenAbi, functionName: "allowance", args: [account!, escrowAddress] }); setAllowance(approved); }
     catch { /* message was set by sendWrite */ }
   }
   async function mintTestToken() {

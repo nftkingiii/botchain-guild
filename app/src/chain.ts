@@ -70,7 +70,7 @@ export async function readJobs(): Promise<GuildJob[]> {
   }
   const entries = logs.flat().slice(-100).reverse();
   const jobs = await Promise.all(entries.map(async (log) => {
-    const id = (log.args as { jobId?: `0x${string}` } | undefined)?.jobId;
+    const id = ((log as any).args as { jobId?: `0x${string}` } | undefined)?.jobId;
     if (!id || log.blockNumber === null || !log.transactionHash) return null;
     const job = await publicClient.readContract({ address: escrowAddress, abi: escrowAbi, functionName: "getJob", args: [id] });
     return { id, client: job.client, worker: job.worker, arbiter: job.arbiter, amount: job.amount, deadline: job.deadline, submittedAt: job.submittedAt, state: job.state, evidenceHash: job.evidenceHash, blockNumber: log.blockNumber, transactionHash: log.transactionHash } satisfies GuildJob;
@@ -90,7 +90,7 @@ export async function readTimeline(id: `0x${string}`, from = deploymentBlock): P
       const logs = await publicClient.getLogs({ address: escrowAddress, event, args: { jobId: id }, fromBlock: start, toBlock: end });
       for (const log of logs) {
         if (log.blockNumber === null) continue;
-        const args = log.args as Record<string, unknown>;
+        const args = (log as any).args as Record<string, unknown>;
         const kind = name === "JobFunded" ? "funded" : name === "EvidenceSubmitted" ? "evidence" : name === "DisputeOpened" ? "dispute" : name === "JobReleased" ? "released" : "refunded";
         const actor = kind === "funded" || kind === "refunded" ? args.client as string | undefined : kind === "dispute" ? args.openedBy as string | undefined : kind === "released" ? args.worker as string | undefined : undefined;
         all.push({ kind, block: log.blockNumber, hash: (args.evidenceHash as `0x${string}` | undefined) ?? id, actor, timedOut: args.timedOut as boolean | undefined });
